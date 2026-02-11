@@ -6,7 +6,7 @@ interface MovieGridProps {
   movies: Movie[];
 }
 
-function MovieGrid({ onSelect, movies }: MovieGridProps) {
+export default function MovieGrid({ onSelect, movies }: MovieGridProps) {
   return (
     <ul className={css.grid}>
       {movies.map(movie => (
@@ -25,5 +25,3 @@ function MovieGrid({ onSelect, movies }: MovieGridProps) {
     </ul>
   );
 }
-
-export default MovieGrid;

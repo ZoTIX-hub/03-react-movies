@@ -26,4 +26,8 @@ export const fetchMovies = async (
   );
 
   return response.data;
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> 2633ab605872a18297f9d5f0c0fc67ddd67a7c93
