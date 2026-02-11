@@ -1,54 +1,83 @@
-import { useState } from 'react';
-import css from './App.module.css';
-import SearchBar from '../SearchBar/SearchBar';
-import MovieGrid from '../MovieGrid/MovieGrid';
-import Loader from '../Loader/Loader';
-import ErrorMessage from '../ErrorMessage/ErrorMessage';
-import MovieModal from '../MovieModal/MovieModal';
-import type { Movie } from '../../types/movie';
-import { fetchMovies } from '../../services/movieService';
-import toast from 'react-hot-toast';
+import React from "react";
+import css from "./App.module.css";
 
-function App() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+import { Toaster, toast } from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 
-  const handleSearch = async (query: string) => {
-    setIsLoading(true);
-    setIsError(false);
-    setMovies([]);
-    setSelectedMovie(null);
+import ReactPaginateImport from "react-paginate";
 
-    try {
-      const films = await fetchMovies(query);
-      if (films.length === 0) {
-        toast.error('No movies found for your request.');
-        setIsLoading(false);
-        return;
-      }
-      setMovies(films);
-    } catch (error) {
-      setIsError(true);
-      console.error('Error fetching movies:', error);
-    } finally {
-      setIsLoading(false);
+const ReactPaginate =
+  (ReactPaginateImport as unknown as { default: typeof ReactPaginateImport })
+    .default ?? ReactPaginateImport;
+
+
+import type { FetchMoviesResponse } from "../../services/movieService";
+import type { Movie } from "../../types/movie";
+import { fetchMovies } from "../../services/movieService";
+
+import SearchBar from "../SearchBar/SearchBar";
+import MovieGrid from "../MovieGrid/MovieGrid";
+import Loader from "../Loader/Loader";
+import ErrorMessage from "../ErrorMessage/ErrorMessage";
+import MovieModal from "../MovieModal/MovieModal";
+
+export default function App() {
+  const [selectedMovie, setSelectedMovie] = React.useState<Movie | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [query, setQuery] = React.useState("");
+
+  const { data, isLoading, isError, isSuccess } =
+    useQuery<FetchMoviesResponse>({
+      queryKey: ["movies", query, currentPage],
+      queryFn: () => fetchMovies(query, currentPage),
+      enabled: query.trim().length > 0,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
+      placeholderData: (previousData) => previousData ?? undefined,
+    });
+
+  React.useEffect(() => {
+    if (isSuccess && data?.results.length === 0) {
+      toast.error("No movies found");
     }
-  };
+  }, [isSuccess, data]);
 
-  const onSelectMovie = (movie: Movie) => {
-    setSelectedMovie(movie);
-  };
+  function handleSearch(newQuery: string) {
+    setQuery(newQuery);
+    setCurrentPage(1);
+    setSelectedMovie(null);
+  }
 
   return (
     <div className={css.app}>
+      <Toaster position="top-right" />
+
       <SearchBar onSubmit={handleSearch} />
+
+      {data && data.total_pages > 1 && (
+        <ReactPaginate
+          pageCount={data.total_pages}
+          pageRangeDisplayed={5}
+          marginPagesDisplayed={1}
+          onPageChange={({ selected }: { selected: number }) =>
+            setCurrentPage(selected + 1)
+          }
+          forcePage={currentPage - 1}
+          containerClassName={css.pagination}
+          activeClassName={css.active}
+          nextLabel="→"
+          previousLabel="←"
+        />
+      )}
+
       {isLoading && <Loader />}
       {isError && <ErrorMessage />}
-      {movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={onSelectMovie} />
+
+      {data && data.results.length > 0 && (
+        <MovieGrid movies={data.results} onSelect={setSelectedMovie} />
       )}
+
       {selectedMovie && (
         <MovieModal
           movie={selectedMovie}
@@ -58,5 +87,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
