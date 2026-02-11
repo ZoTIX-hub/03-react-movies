@@ -8,7 +8,7 @@ interface MovieModalProps {
   onClose: () => void;
 }
 
-function MovieModal({ movie, onClose }: MovieModalProps) {
+export default function MovieModal({ movie, onClose }: MovieModalProps) {
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -66,5 +66,3 @@ function MovieModal({ movie, onClose }: MovieModalProps) {
     document.body
   );
 }
-
-export default MovieModal;
